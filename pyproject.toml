@@ -1,15 +1,15 @@
 [project]
-name = "openjudge"                # 패키지 이름 (pip install openjudge)
-version = "0.1.0"                 # 버전
-description = "local judge & test case generater"  # 간단한 설명
-readme = "README.md"              # 긴 설명 파일
-requires-python = ">=3.7"         # 최소 Python 버전
-license = {text = "MIT"}          # 라이선스
-authors = [{name = "홍길동", email = "you@example.com"}]  # 작성자
+name = "openjudge"
+version = "0.1.0"
+description = "Local code judge & test case generator"
+readme = "README.md"
+requires-python = ">=3.7"
+license = {text = "MIT"}
+authors = [{name = "Airhood", email = "shinesky0530@gmail.com"}]
 
-[project.urls]                    # 프로젝트 관련 링크
-"Homepage" = "https://github.com/you/openjudge"
+[project.urls]
+"Homepage" = "https://www.airhood.dev"
 
 [build-system]
-requires = ["setuptools>=61.0"]  # 설치에 필요한 도구
+requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
