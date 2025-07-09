@@ -1,5 +1,4 @@
 import os
-from code_judge import TC_Judge
 
 class TC_Generator:
     def __init__(self):

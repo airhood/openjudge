@@ -2,8 +2,6 @@
 
 **OpenJudge** is a lightweight Python package for running test cases on programs automatically. It’s designed to make local problem-solving and competitive programming development easier by simulating basic judge-like behavior.
 
----
-
 ## ✅ Features
 
 - Run multiple test cases automatically
@@ -13,13 +11,9 @@
 - Cross-platform line-ending normalization (`\r\n` → `\n`)
 - Configurable input/output folders
 
----
-
 ## 🚀 Installation
 
 No installation required. Just download `autojudge.py` into your project.
-
----
 
 ## 📂 Folder Structure
 
@@ -30,8 +24,6 @@ problem/
 │ ├── 001.out
 │ ├── 002.in
 │ └── 002.out
-
----
 
 ## ⚙️ Usage
 
@@ -46,3 +38,4 @@ tc_judge.load_code(r'your solution path')
 tc_judge.set_time_limit(1000)
 tc_judge.run()
 tc_judge.print_results()
+```

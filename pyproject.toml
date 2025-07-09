@@ -8,7 +8,7 @@ license = {text = "MIT"}
 authors = [{name = "Airhood", email = "shinesky0530@gmail.com"}]
 
 [project.urls]
-"Homepage" = "https://www.airhood.dev"
+"Homepage" = "https://github.com/airhood/openjudge"
 
 [build-system]
 requires = ["setuptools>=61.0"]
