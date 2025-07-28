@@ -94,3 +94,6 @@ class ProblemBuilder:
     def set_memory_limit(self, memory_limit: int):
         self.memory_limit = memory_limit
         return self
+    
+    def build(self):
+        pass

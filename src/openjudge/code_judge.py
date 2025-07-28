@@ -4,7 +4,7 @@ import subprocess
 import psutil
 import threading
 
-def normalize_output(s: str) -> str:
+def normalize_str(s: str) -> str:
     return s.replace('\r\n', '\n').rstrip('\n').rstrip('\r')
 
 class TC_Judge:
@@ -68,13 +68,6 @@ class TC_Judge:
         try:
             start_time = time.perf_counter()
 
-            result = subprocess.run(
-                ["python", self.code_path],
-                input = input_data.encode("utf-8"),
-                capture_output=True,
-                timeout=self.time_limit
-            )
-
             proc = subprocess.Popen(
                 ["python", self.code_path],
                 stdin=subprocess.PIPE,
@@ -102,7 +95,7 @@ class TC_Judge:
             monitor_thread.start()
 
             try:
-                stdout, stderr = proc.communicate(input=input_data.encode('utf-8'), timeout=self.time_limit)
+                stdout, stderr = proc.communicate(input=normalize_str(input_data).encode('utf-8'), timeout=self.time_limit)
             except subprocess.TimeoutExpired:
                 proc.kill()
                 return {
@@ -133,7 +126,7 @@ class TC_Judge:
             
             test_output = stdout.decode("utf-8")
 
-            if normalize_output(test_output.strip()) == normalize_output(output_data.strip()):
+            if normalize_str(test_output.strip()) == normalize_str(output_data.strip()):
                 return {
                     "status": "AC",
                     "message": "Accepted",
@@ -176,7 +169,7 @@ class TC_Judge:
                 print(f"[TC {str(i+1).zfill(tc_idx_len)}] ⌛ TLE (elapsed_time: {elapsed_time:.3f}ms)")
                 tle += 1
 
-        print("\n[Result]")
+        print("\n===== Result =====")
         print(f"- ✅ AC: {ac}/{TC_count}")
         print(f"- ❌ WA: {wa}/{TC_count}")
         print(f"- 🛑 RE: {re}/{TC_count}")
@@ -198,7 +191,8 @@ class Checker_Judge:
         self.TC_in = []
         self.checker_path = None
         self.code_path = None
-        self.time_limit = None
+        self.time_limit = 2
+        self.memory_limit = 256
         self.results = []
 
     def load_TC(self, tc_path: str, tc_count: int, format: int):
@@ -213,7 +207,7 @@ class Checker_Judge:
         
         for i in range(1, tc_count + 1):
             fname = str(i).zfill(format)
-            in_dir = os.path.join(tc_path, fname + ".in")
+            in_dir = os.path.join(tc_path, "test" + fname + ".in")
 
             with open(in_dir, 'r') as file:
                 input_read = file.read()
@@ -257,13 +251,6 @@ class Checker_Judge:
         try:
             start_time = time.perf_counter()
 
-            result = subprocess.run(
-                ["python", self.code_path],
-                input = input_data.encode("utf-8"),
-                capture_output=True,
-                timeout=self.time_limit
-            )
-
             proc = subprocess.Popen(
                 ["python", self.code_path],
                 stdin=subprocess.PIPE,
@@ -277,18 +264,21 @@ class Checker_Judge:
             def monitor():
                 nonlocal mem_exceeded
                 while proc.poll() is None:
-                    mem = p.memory_info().rss / (1024 * 1024) # MB
-                    if self.memory_limit and mem > self.memory_limit:
-                        mem_exceeded = True
-                        proc.kill()
+                    try:
+                        mem = p.memory_info().rss / (1024 * 1024)  # MB
+                        if self.memory_limit and mem > self.memory_limit:
+                            mem_exceeded = True
+                            proc.kill()
+                            break
+                        time.sleep(0.01)
+                    except psutil.NoSuchProcess:
                         break
-                    time.sleep(0.01)
                 
             monitor_thread = threading.Thread(target=monitor)
             monitor_thread.start()
 
             try:
-                stdout, stderr = proc.communicate(input=input_data.encode('utf-8'), timeout=self.time_limit)
+                stdout, stderr = proc.communicate(input=normalize_str(input_data).encode('utf-8'), timeout=self.time_limit)
             except subprocess.TimeoutExpired:
                 proc.kill()
                 return {
@@ -319,28 +309,39 @@ class Checker_Judge:
             
             test_output = stdout.decode("utf-8")
 
-            checker_result = subprocess.run(
-                ["python", self.checker_path],
-                input = normalize_output(test_output.strip()),
-                capture_output=True,
-                timeout=1.0
-            )
+            try:
+                checker_input = input_data.strip() + '\n' + test_output.strip()
 
-            checker_output = checker_result.stdout.decode("utf-8")
+                checker_result = subprocess.run(
+                    ["python", self.checker_path],
+                    input = normalize_str(checker_input).encode("utf-8"),
+                    capture_output=True,
+                    timeout=1.0
+                )
 
-            if normalize_output(checker_output) == '1':
+                checker_output = checker_result.stdout.decode("utf-8")
+
+                if normalize_str(checker_output) == '1':
+                    return {
+                        "status": "AC",
+                        "message": "Accepted",
+                        "elapsed_time": elapsed_time,
+                        "return_code": proc.returncode
+                    }
+                else:
+                    return {
+                        "status": "WA",
+                        "message": "Wrong Answer",
+                        "elapsed_time": elapsed_time,
+                        "return_code": proc.returncode
+                    }
+            
+            except Exception as e:
                 return {
-                    "status": "AC",
-                    "message": "Accepted",
-                    "elapsed_time": elapsed_time,
-                    "return_code": proc.returncode
-                }
-            else:
-                return {
-                    "status": "WA",
-                    "message": "Wrong Answer",
-                    "elapsed_time": elapsed_time,
-                    "return_code": proc.returncode
+                    "status": "CKE",
+                    "message": f"Checker Error: {type(e).__name__}: {e}",
+                    "elapsed_time": 0,
+                    "return_code": None
                 }
         
         except Exception as e:
@@ -354,7 +355,7 @@ class Checker_Judge:
     def print_results(self):
         TC_count = len(self.results)
         tc_idx_len = len(str(TC_count))
-        ac, wa, re, tle = 0, 0, 0, 0
+        ac, wa, re, tle, cke = 0, 0, 0, 0, 0
         for i in range(TC_count):
             status = self.results[i]["status"]
             elapsed_time = self.results[i]["elapsed_time"] * 1000 # ms
@@ -370,12 +371,16 @@ class Checker_Judge:
             elif status == "TLE":
                 print(f"[TC {str(i+1).zfill(tc_idx_len)}] ⌛ TLE (elapsed_time: {elapsed_time:.3f}ms)")
                 tle += 1
+            elif status == "CKE":
+                print(f"[TC {str(i+1).zfill(tc_idx_len)}] 🔎 CKE")
+                cke += 1
 
-        print("\n[Result]")
+        print("\n===== Result =====")
         print(f"- ✅ AC: {ac}/{TC_count}")
         print(f"- ❌ WA: {wa}/{TC_count}")
         print(f"- 🛑 RE: {re}/{TC_count}")
         print(f"- ⌛ TLE: {tle}/{TC_count}")
+        print(f"- 🔎 CKE: {cke}/{TC_count}")
 
     def clear_results(self):
         self.results = []
