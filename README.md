@@ -17,6 +17,7 @@ No installation required. Just download `autojudge.py` into your project.
 
 ## 📂 Folder Structure
 
+```
 problem/
 ├── your_program.py
 ├── tests/
@@ -24,6 +25,7 @@ problem/
 │ ├── 001.out
 │ ├── 002.in
 │ └── 002.out
+```
 
 ## ⚙️ Usage
 
@@ -34,8 +36,16 @@ from openjudge import TC_Judge
 
 tc_judge = TC_Judge()
 tc_judge.load_TC(r'your testcase path', 50, 3)
-tc_judge.load_code(r'your solution path')
+tc_judge.load_code(r'your code path')
 tc_judge.set_time_limit(1000)
 tc_judge.run()
 tc_judge.print_results()
+
+checker_judge = Checker_Judge()
+checker_judge.load_checker(r'your checker path')
+checker_judge.load_TC(r'your testcase path', 50, 3)
+checker_judge.load_code(r'your code path')
+checker_judge.set_time_limit(1000)
+checker_judge.run()
+checker_judge.print_results()
 ```
